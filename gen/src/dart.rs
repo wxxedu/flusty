@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, ops::Add};
 
 use flusty_parse::rust::types::{
     RsEnum, RsField, RsFn, RsPrimitive, RsStruct, RsType, RsVariant,
@@ -387,6 +387,11 @@ impl DartFileBuilder {
         self.lib_path.push(path.into());
     }
 
+    pub fn set_lib_path(&mut self, path: &[&str]) {
+        self.lib_path = path.iter().map(|p| p.to_string()).collect();
+        dbg!(&self.lib_path);
+    }
+
     pub fn set_lib_name(&mut self, name: &str) {
         self.lib_name = Some(name.into());
     }
@@ -396,15 +401,17 @@ impl DartFileBuilder {
             .module_name
             .clone()
             .ok_or_else(|| ConversionError::MissingModuleName)?;
-        let lib_path = if self.lib_path.is_empty() {
+        let lib_path = if !self.lib_path.is_empty() {
             self.lib_path
                 .iter()
                 .map(|p| format!("'{}'", p))
                 .collect::<Vec<_>>()
                 .join(", ")
+                .add(", ")
         } else {
             "".to_string()
         };
+        dbg!(&lib_path);
         let lib_name = self
             .lib_name
             .clone()
@@ -444,5 +451,3 @@ mod tests {
         assert_eq!(obj.camel_case_name(), "helloWorld");
     }
 }
-
-

@@ -25,6 +25,7 @@ fn handle_item_fn(f: &ItemFn) -> TokenStream {
     let sig = &f.sig;
     let body = &f.block;
     quote::quote! {
+        #[no_mangle]
         pub extern "C" #sig {
             #body
         }

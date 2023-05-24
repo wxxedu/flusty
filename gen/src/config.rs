@@ -3,13 +3,14 @@ use std::{error::Error, fmt::Display, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_RUST_ENTRY: &str = "native/src/";
-const DEFAULT_DART_OUT: &str = "lib/gen/";
+const DEFAULT_DART_OUT: &str = "lib/gen/api.dart";
 const DEFAULT_CONFIG_DIR: &str = "flusty.toml";
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
     rust_entry: Option<String>,
     dart_out: Option<String>,
+    libpath: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -118,6 +119,18 @@ impl Config {
         self.dart_out = Some(path.to_string());
     }
 
+    pub fn set_libpath(&mut self, paths: Vec<&dyn AsRef<str>>) {
+        self.libpath.clear();
+        for path in paths {
+            self.libpath.push(path.as_ref().to_string());
+        }
+        dbg!(&self.libpath);
+    }
+
+    pub fn libpath(&self) -> Vec<String> {
+        self.libpath.clone()
+    }
+
     pub fn load(&mut self) -> Result<&mut Self, ConfigError> {
         let root = Self::root_dir();
         let path = root.join(DEFAULT_CONFIG_DIR);
@@ -138,3 +151,4 @@ impl Config {
             .expect("Failed to write config to disk");
     }
 }
+
