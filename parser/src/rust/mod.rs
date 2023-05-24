@@ -1,3 +1,2 @@
-pub mod function;
 pub mod module;
-pub mod struct_;
+pub mod types;

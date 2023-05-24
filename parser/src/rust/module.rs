@@ -5,6 +5,8 @@ use syn::{
     Meta,
 };
 
+use super::types::{RsEnum, RsFn, RsStruct};
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleError {
     MissingName,
@@ -35,9 +37,9 @@ pub struct Module {
     pub name: String,
     pub path: String,
     pub children: Vec<Module>,
-    pub structs: Vec<ItemStruct>,
-    pub functions: Vec<ItemFn>,
-    pub enums: Vec<ItemEnum>,
+    pub structs: Vec<RsStruct>,
+    pub functions: Vec<RsFn>,
+    pub enums: Vec<RsEnum>,
 }
 
 impl Module {
@@ -52,13 +54,17 @@ pub struct ModuleBuilder<'a> {
     path: Option<String>,
     children: Vec<Module>,
     annotations: &'a [&'a str],
-    structs: Vec<ItemStruct>,
-    functions: Vec<ItemFn>,
-    enums: Vec<ItemEnum>,
+    structs: Vec<RsStruct>,
+    functions: Vec<RsFn>,
+    enums: Vec<RsEnum>,
 }
 
 impl<'a> ModuleBuilder<'a> {
     pub fn new(annotation: &'a [&'a str]) -> Self {
+        log::info!(
+            "Creating new module builder searching for {:?}",
+            annotation
+        );
         Self {
             name: None,
             path: None,
@@ -71,27 +77,32 @@ impl<'a> ModuleBuilder<'a> {
     }
 
     pub fn name(&mut self, name: String) -> &mut Self {
+        log::info!("Setting name to {}", name);
         self.name = Some(name);
         self
     }
 
     pub fn path(&mut self, path: String) -> &mut Self {
+        log::info!("Setting path to {}", path);
         self.path = Some(path);
         self
     }
 
     fn read_module(&self) -> Result<File, ModuleError> {
         if self.name.is_none() {
+            log::error!("Missing name");
             return Err(ModuleError::MissingName);
         }
         let name = self.name.as_ref().unwrap();
         if self.path.is_none() {
+            log::error!("Missing path");
             return Err(ModuleError::MissingPath);
         }
         let path = self.path.as_ref().unwrap();
         let path_1 = format!("{}/{}.rs", path, name);
         let path_2 = format!("{}/{}.mod.rs", path, name);
-        if let Ok(file) = std::fs::read_to_string(path_1) {
+        if let Ok(file) = std::fs::read_to_string(&path_1) {
+            log::info!("Reading file {}", &path_1);
             let res =
                 parse_file(&file).map_err(|_| ModuleError::InvalidModule {
                     name: self.name.as_ref().unwrap().clone(),
@@ -99,7 +110,8 @@ impl<'a> ModuleBuilder<'a> {
                 })?;
             return Ok(res);
         }
-        if let Ok(file) = std::fs::read_to_string(path_2) {
+        if let Ok(file) = std::fs::read_to_string(&path_2) {
+            log::info!("Reading file {}", &path_2);
             let res =
                 parse_file(&file).map_err(|_| ModuleError::InvalidModule {
                     name: self.name.as_ref().unwrap().clone(),
@@ -107,6 +119,7 @@ impl<'a> ModuleBuilder<'a> {
                 })?;
             return Ok(res);
         }
+        log::error!("Missing file {} or {}", &path_1, &path_2);
         Err(ModuleError::InvalidModule {
             name: self.name.as_ref().unwrap().clone(),
             path: path.to_string(),
@@ -138,6 +151,7 @@ impl<'a> ModuleBuilder<'a> {
     fn handle_mod(&mut self, item: &ItemMod) -> Result<(), ModuleError> {
         match &item.vis {
             syn::Visibility::Public(_) => {
+                log::info!("Found module {}", item.ident);
                 let mut builder = ModuleBuilder::new(self.annotations);
                 let res = builder
                     .name(item.ident.to_string())
@@ -147,7 +161,10 @@ impl<'a> ModuleBuilder<'a> {
                 self.children.push(res);
                 Ok(())
             }
-            _ => return Ok(()),
+            _ => {
+                log::info!("Skipping module {}", item.ident);
+                return Ok(());
+            }
         }
     }
 
@@ -156,13 +173,19 @@ impl<'a> ModuleBuilder<'a> {
             syn::Visibility::Public(_) => {
                 for attr in &item.attrs {
                     if self.should_include(attr) {
-                        self.functions.push(item.clone());
+                        log::info!("Adding function {}", item.sig.ident);
+                        self.functions.push(item.clone().into());
                         return Ok(());
+                    } else {
+                        log::info!("Skipping function {}", item.sig.ident);
                     }
                 }
                 Ok(())
             }
-            _ => return Ok(()),
+            _ => {
+                log::info!("Skipping function {}", item.sig.ident);
+                return Ok(());
+            }
         }
     }
 
@@ -171,13 +194,19 @@ impl<'a> ModuleBuilder<'a> {
             syn::Visibility::Public(_) => {
                 for attr in &item.attrs {
                     if self.should_include(attr) {
-                        self.structs.push(item.clone());
+                        log::info!("Adding struct {}", item.ident);
+                        self.structs.push(item.clone().into());
                         return Ok(());
+                    } else {
+                        log::info!("Skipping struct {}", item.ident);
                     }
                 }
                 Ok(())
             }
-            _ => return Ok(()),
+            _ => {
+                log::info!("Skipping struct {}", item.ident);
+                return Ok(());
+            }
         }
     }
 
@@ -186,13 +215,19 @@ impl<'a> ModuleBuilder<'a> {
             syn::Visibility::Public(_) => {
                 for attr in &item.attrs {
                     if self.should_include(attr) {
-                        self.enums.push(item.clone());
+                        log::info!("Adding enum {}", item.ident);
+                        self.enums.push(item.clone().into());
                         return Ok(());
+                    } else {
+                        log::info!("Skipping enum {}", item.ident);
                     }
                 }
                 Ok(())
             }
-            _ => return Ok(()),
+            _ => {
+                log::info!("Skipping enum {}", item.ident);
+                return Ok(());
+            }
         }
     }
 
