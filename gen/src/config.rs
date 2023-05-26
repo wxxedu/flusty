@@ -151,4 +151,3 @@ impl Config {
             .expect("Failed to write config to disk");
     }
 }
-

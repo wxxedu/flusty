@@ -318,6 +318,10 @@ impl DartFn for RsFn {
     }
 }
 
+pub trait DartTypedef {
+    fn to_dart(&self) -> Result<String, ConversionError>;
+}
+
 const DART_TEMPLATE: &str = r#"
 import 'dart:ffi' as ffi;
 import 'dart:io' show Platform, Directory;
@@ -364,6 +368,7 @@ pub struct DartFileBuilder {
     pub lib_path: Vec<String>,
     pub lib_name: Option<String>,
     pub fn_linkers: Vec<String>,
+    pub types: Vec<String>,
 }
 
 impl DartFileBuilder {
@@ -376,6 +381,15 @@ impl DartFileBuilder {
         self.type_defs.push(ffi_typedef);
         self.type_defs.push(dart_typedef);
         self.fn_linkers.push(fn_linker);
+        Ok(())
+    }
+
+    pub fn add_struct(
+        &mut self,
+        s: &impl DartTypedef,
+    ) -> Result<(), ConversionError> {
+        let struct_def = s.to_dart()?;
+        self.types.push(struct_def);
         Ok(())
     }
 
