@@ -1,3 +1,0 @@
-rust_entry = "example/native/src/"
-dart_out = "example/lib/flusty.dart"
-libpath = ["native", "target", "release"]

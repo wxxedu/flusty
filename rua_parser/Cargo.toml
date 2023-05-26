@@ -1,5 +1,5 @@
 [package]
-name = "flusty-parse"
+name = "rua-parser"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.17"
-proc-macro2 = "1.0.58"
+proc-macro2 = { version = "1.0.58", features = ["span-locations", "nightly"] }
 quote = "1.0.27"
 syn = { version = "2.0.16", features = ["full", "extra-traits"] }

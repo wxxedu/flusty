@@ -1,4 +1,4 @@
-//! # `flusty-annot`
+//! # `rua-annot`
 //!
 //! This crate provides the annotations needed to generate binding between Rust
 //! and another language. (Currently, Dart).
@@ -19,7 +19,7 @@ extern crate proc_macro;
 ///   `#[repr(C)]`.
 /// - If applied to anything else, it will panic.
 #[proc_macro_attribute]
-pub fn flusty(
+pub fn rua(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
